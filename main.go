@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
-	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -20,15 +18,9 @@ import (
 	"github.com/charmbracelet/wish/bubbletea"
 	"github.com/charmbracelet/wish/logging"
 	"github.com/mluna-again/luna/luna"
-	"github.com/mluna-again/mlssh/repo"
 
 	_ "modernc.org/sqlite"
 )
-
-func aLittleBit() (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	return ctx, cancel
-}
 
 func main() {
 	host := os.Getenv("MLSSH_HOST")
@@ -110,165 +102,4 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		user:              user{publicKey: "", name: s.User()},
 	}
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
-}
-
-type user struct {
-	publicKey string
-	name      string
-	isNew     bool
-}
-
-type model struct {
-	term              string
-	profile           string
-	width             int
-	height            int
-	bg                string
-	txtStyle          lipgloss.Style
-	quitStyle         lipgloss.Style
-	luna              luna.LunaModel
-	originalUsername  string
-	originalPublicKey string
-	remoteAddr        string
-	db                *sql.DB
-	queries           *repo.Queries
-	quitting          bool
-	err               error
-	user              user
-}
-
-type connectToDBMsg struct {
-	db      *sql.DB
-	queries *repo.Queries
-	err     error
-	user    user
-}
-
-func (m model) connectToDB() tea.Msg {
-	if m.originalPublicKey == "" {
-		return connectToDBMsg{err: errors.New("sorry, you need to use public key to access the server")}
-	}
-
-	db, err := sql.Open("sqlite", "data.db")
-	if err != nil {
-		log.Error(err)
-		return connectToDBMsg{err: err}
-	}
-
-	queries := repo.New(db)
-
-	newUser := false
-	ctx, cancel := aLittleBit()
-	defer cancel()
-	u, err := queries.GetUser(ctx, m.originalPublicKey)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		log.Error(err)
-		return connectToDBMsg{err: err}
-	}
-
-	if err != nil && errors.Is(err, sql.ErrNoRows) {
-		log.Info(fmt.Sprintf("creating a new user: %s", m.originalUsername))
-		u, err = queries.CreateUser(ctx, repo.CreateUserParams{
-			Name:      m.originalUsername,
-			PublicKey: m.originalPublicKey,
-		})
-		newUser = true
-		if err != nil {
-			log.Error(err)
-			return connectToDBMsg{err: err}
-		}
-	}
-
-	log.Info(fmt.Sprintf("user %s logged", u.Name))
-	return connectToDBMsg{
-		db:      db,
-		err:     nil,
-		queries: queries,
-		user: user{
-			// use the provided username, it's whatever
-			name:      m.originalUsername,
-			publicKey: u.PublicKey,
-			isNew:     newUser,
-		},
-	}
-}
-
-type quitSlowlyMsg struct{}
-
-func quitSlowly() tea.Msg {
-	time.Sleep(time.Second * 3)
-	return quitSlowlyMsg{}
-}
-
-func (m model) Init() tea.Cmd {
-	return tea.Batch(m.luna.Init(), m.connectToDB)
-}
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	cmds := []tea.Cmd{}
-
-	switch msg := msg.(type) {
-	case quitSlowlyMsg:
-		// TODO: how do i gracefully close the db?
-		if m.db != nil {
-			_ = m.db.Close()
-		}
-		return m, tea.Quit
-
-	case connectToDBMsg:
-		if msg.err != nil {
-			m.quitting = true
-			m.err = msg.err
-			log.Error(m.err)
-			return m, quitSlowly
-		}
-		m.db = msg.db
-		m.queries = msg.queries
-		m.user = msg.user
-
-	case tea.WindowSizeMsg:
-		m.height = msg.Height
-		m.width = msg.Width
-
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c":
-			return m, tea.Quit
-		}
-	}
-
-	var lunaCmd tea.Cmd
-	m.luna, lunaCmd = m.luna.Update(msg)
-	cmds = append(cmds, lunaCmd)
-
-	return m, tea.Batch(cmds...)
-}
-
-func (m model) View() string {
-	if m.quitting && m.err != nil {
-		return "sorry, something went wrong! see you!"
-	}
-
-	if m.quitting {
-		return "bye!"
-	}
-
-	backMsg := ""
-	if m.user.isNew {
-		backMsg = "welcome!"
-	} else {
-		backMsg = "nice to see you back :)"
-	}
-
-	content := lipgloss.JoinVertical(lipgloss.Center, fmt.Sprintf("Hi, %s. nice ip (%s) ;)", m.user.name, m.remoteAddr), m.luna.View(), backMsg)
-
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
-}
-
-func removePort(ip string) string {
-	host, _, err := net.SplitHostPort(ip)
-	if err != nil {
-		return ip
-	}
-	return host
 }
