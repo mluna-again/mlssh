@@ -77,29 +77,31 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	}
 
 	m := model{
-		term:      pty.Term,
-		profile:   renderer.ColorProfile().Name(),
-		width:     pty.Window.Width,
-		height:    pty.Window.Height,
-		bg:        bg,
-		txtStyle:  txtStyle,
-		quitStyle: quitStyle,
-		luna:      l,
-		username:  s.User(),
+		term:       pty.Term,
+		profile:    renderer.ColorProfile().Name(),
+		width:      pty.Window.Width,
+		height:     pty.Window.Height,
+		bg:         bg,
+		txtStyle:   txtStyle,
+		quitStyle:  quitStyle,
+		luna:       l,
+		username:   s.User(),
+		remoteAddr: s.RemoteAddr().String(),
 	}
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
 }
 
 type model struct {
-	term      string
-	profile   string
-	width     int
-	height    int
-	bg        string
-	txtStyle  lipgloss.Style
-	quitStyle lipgloss.Style
-	luna      luna.LunaModel
-	username  string
+	term       string
+	profile    string
+	width      int
+	height     int
+	bg         string
+	txtStyle   lipgloss.Style
+	quitStyle  lipgloss.Style
+	luna       luna.LunaModel
+	username   string
+	remoteAddr string
 }
 
 func (m model) Init() tea.Cmd {
@@ -129,7 +131,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	content := lipgloss.JoinVertical(lipgloss.Center, fmt.Sprintf("Hi, %s", m.username), m.luna.View())
+	content := lipgloss.JoinVertical(lipgloss.Center, fmt.Sprintf("Hi, %s. nice %s ip", m.username, m.remoteAddr), m.luna.View())
 
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
 }
