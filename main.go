@@ -21,12 +21,16 @@ import (
 	"github.com/mluna-again/luna/luna"
 )
 
-const (
-	host = "localhost"
-	port = "23234"
-)
-
 func main() {
+	host := os.Getenv("MLSSH_HOST")
+	port := os.Getenv("MLSSH_PORT")
+	if host == "" {
+		host = "localhost"
+	}
+	if port == "" {
+		port = "23234"
+	}
+
 	s, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
