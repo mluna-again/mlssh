@@ -10,14 +10,12 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
 	"github.com/charmbracelet/wish/activeterm"
 	"github.com/charmbracelet/wish/bubbletea"
 	"github.com/charmbracelet/wish/logging"
-	"github.com/mluna-again/luna/luna"
 
 	_ "modernc.org/sqlite"
 )
@@ -69,37 +67,6 @@ func main() {
 }
 
 func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
-	l := luna.NewLuna(luna.NewLunaParams{Animation: "sleeping", Pet: "turtle"})
-	pty, _, _ := s.Pty()
-
-	renderer := bubbletea.MakeRenderer(s)
-	txtStyle := renderer.NewStyle().Foreground(lipgloss.Color("10"))
-	quitStyle := renderer.NewStyle().Foreground(lipgloss.Color("8"))
-
-	bg := "light"
-	if renderer.HasDarkBackground() {
-		bg = "dark"
-	}
-
-	pk := s.PublicKey()
-	pkStr := ""
-	if pk != nil {
-		pkStr = string(pk.Marshal())
-	}
-
-	m := model{
-		term:              pty.Term,
-		profile:           renderer.ColorProfile().Name(),
-		width:             pty.Window.Width,
-		height:            pty.Window.Height,
-		bg:                bg,
-		txtStyle:          txtStyle,
-		quitStyle:         quitStyle,
-		luna:              l,
-		originalUsername:  s.User(),
-		originalPublicKey: pkStr,
-		remoteAddr:        removePort(s.RemoteAddr().String()),
-		user:              user{publicKey: "", name: s.User()},
-	}
+	m := newModel(s)
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
 }

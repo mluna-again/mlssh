@@ -2,13 +2,20 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
+	"github.com/charmbracelet/ssh"
+	"github.com/charmbracelet/wish/bubbletea"
 	"github.com/mluna-again/luna/luna"
 	"github.com/mluna-again/mlssh/repo"
+)
+
+type availableScreen int
+
+const (
+	home availableScreen = iota
 )
 
 type user struct {
@@ -18,22 +25,76 @@ type user struct {
 }
 
 type model struct {
-	term              string
-	profile           string
-	width             int
-	height            int
-	bg                string
-	txtStyle          lipgloss.Style
-	quitStyle         lipgloss.Style
-	luna              luna.LunaModel
+	// user stuff
 	originalUsername  string
 	originalPublicKey string
 	remoteAddr        string
-	db                *sql.DB
-	queries           *repo.Queries
-	quitting          bool
-	err               error
 	user              user
+
+	// styles
+	txtStyle  lipgloss.Style
+	quitStyle lipgloss.Style
+	renderer  *lipgloss.Renderer
+
+	// terminal stuff
+	profile string
+	width   int
+	height  int
+	term    string
+	bg      string
+
+	// app stuff
+	db       *sql.DB
+	queries  *repo.Queries
+	quitting bool
+	err      error
+
+	// screen managment
+	currentScreen availableScreen
+
+	// components
+	luna       luna.LunaModel
+	homescreen homescreen
+}
+
+func newModel(s ssh.Session) model {
+	l := luna.NewLuna(luna.NewLunaParams{Animation: "sleeping", Pet: "cat"})
+	pty, _, _ := s.Pty()
+
+	renderer := bubbletea.MakeRenderer(s)
+	txtStyle := renderer.NewStyle().Foreground(lipgloss.Color("10"))
+	quitStyle := renderer.NewStyle().Foreground(lipgloss.Color("8"))
+
+	bg := "light"
+	if renderer.HasDarkBackground() {
+		bg = "dark"
+	}
+
+	pk := s.PublicKey()
+	pkStr := ""
+	if pk != nil {
+		pkStr = string(pk.Marshal())
+	}
+
+	u := user{publicKey: "", name: s.User()}
+	m := model{
+		term:              pty.Term,
+		profile:           renderer.ColorProfile().Name(),
+		width:             pty.Window.Width,
+		height:            pty.Window.Height,
+		bg:                bg,
+		txtStyle:          txtStyle,
+		quitStyle:         quitStyle,
+		luna:              l,
+		originalUsername:  s.User(),
+		originalPublicKey: pkStr,
+		remoteAddr:        removePort(s.RemoteAddr().String()),
+		user:              u,
+		homescreen:        newHomescreen(u, renderer),
+		renderer:          renderer,
+	}
+
+	return m
 }
 
 func (m model) Init() tea.Cmd {
@@ -41,6 +102,7 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	cmds := []tea.Cmd{}
 
 	switch msg := msg.(type) {
@@ -62,15 +124,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.queries = msg.queries
 		m.user = msg.user
 
+		m.homescreen.SetUser(msg.user)
+
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.width = msg.Width
+		lunaH := lipgloss.Height(m.luna.View())
+
+		m.homescreen.SetHeight(msg.Height - lunaH)
+		m.homescreen.SetWidth(msg.Width)
 
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
+	}
+
+	switch m.currentScreen {
+	case home:
+		m.homescreen, cmd = m.homescreen.Update(msg)
+		cmds = append(cmds, cmd)
 	}
 
 	var lunaCmd tea.Cmd
@@ -89,14 +163,11 @@ func (m model) View() string {
 		return "bye!"
 	}
 
-	backMsg := ""
-	if m.user.isNew {
-		backMsg = "welcome!"
-	} else {
-		backMsg = "nice to see you back :)"
+	screen := ""
+	switch m.currentScreen {
+	case home:
+		screen = m.homescreen.View()
 	}
 
-	content := lipgloss.JoinVertical(lipgloss.Center, fmt.Sprintf("Hi, %s. nice ip (%s) ;)", m.user.name, m.remoteAddr), m.luna.View(), backMsg)
-
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
+	return lipgloss.JoinVertical(lipgloss.Top, screen, m.luna.View())
 }
