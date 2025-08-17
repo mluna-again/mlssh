@@ -57,8 +57,11 @@ type model struct {
 	homescreen homescreen
 }
 
-func newModel(s ssh.Session) model {
-	l := luna.NewLuna(luna.NewLunaParams{Animation: "sleeping", Pet: "cat"})
+func newModel(s ssh.Session) (model, []error) {
+	l, err := luna.NewLuna(luna.NewLunaParams{Animation: "sleeping", Pet: "cat", Size: luna.SMALL})
+	if len(err) > 0 {
+		return model{}, err
+	}
 	pty, _, _ := s.Pty()
 
 	renderer := bubbletea.MakeRenderer(s)
@@ -94,7 +97,7 @@ func newModel(s ssh.Session) model {
 		renderer:          renderer,
 	}
 
-	return m
+	return m, nil
 }
 
 func (m model) Init() tea.Cmd {
@@ -169,5 +172,6 @@ func (m model) View() string {
 		screen = m.homescreen.View()
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Top, screen, m.luna.View())
+	petCentered := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, m.luna.View())
+	return lipgloss.JoinVertical(lipgloss.Top, screen, petCentered)
 }

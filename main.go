@@ -67,6 +67,9 @@ func main() {
 }
 
 func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
-	m := newModel(s)
+	m, err := newModel(s)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
 }
