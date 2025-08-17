@@ -18,6 +18,7 @@ import (
 	"github.com/charmbracelet/wish/activeterm"
 	"github.com/charmbracelet/wish/bubbletea"
 	"github.com/charmbracelet/wish/logging"
+	"github.com/mluna-again/luna/luna"
 )
 
 const (
@@ -59,6 +60,7 @@ func main() {
 }
 
 func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
+	l := luna.NewLuna(luna.NewLunaParams{Animation: "sleeping", Pet: "turtle"})
 	pty, _, _ := s.Pty()
 
 	renderer := bubbletea.MakeRenderer(s)
@@ -78,6 +80,8 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		bg:        bg,
 		txtStyle:  txtStyle,
 		quitStyle: quitStyle,
+		luna:      l,
+		username:  s.User(),
 	}
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
 }
@@ -90,27 +94,38 @@ type model struct {
 	bg        string
 	txtStyle  lipgloss.Style
 	quitStyle lipgloss.Style
+	luna      luna.LunaModel
+	username  string
 }
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return m.luna.Init()
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	cmds := []tea.Cmd{}
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.width = msg.Width
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
 	}
-	return m, nil
+
+	var lunaCmd tea.Cmd
+	m.luna, lunaCmd = m.luna.Update(msg)
+	cmds = append(cmds, lunaCmd)
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m model) View() string {
-	s := fmt.Sprintf("Your term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s", m.term, m.width, m.height, m.bg, m.profile)
-	return m.txtStyle.Render(s) + "\n\n" + m.quitStyle.Render("Press 'q' to quit\n")
+	content := lipgloss.JoinVertical(lipgloss.Center, fmt.Sprintf("Hi, %s", m.username), m.luna.View())
+
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
 }
