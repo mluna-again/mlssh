@@ -106,7 +106,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		luna:              l,
 		originalUsername:  s.User(),
 		originalPublicKey: pkStr,
-		remoteAddr:        s.RemoteAddr().String(),
+		remoteAddr:        removePort(s.RemoteAddr().String()),
 		user:              user{publicKey: "", name: s.User()},
 	}
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
@@ -260,7 +260,15 @@ func (m model) View() string {
 		backMsg = "nice to see you back :)"
 	}
 
-	content := lipgloss.JoinVertical(lipgloss.Center, fmt.Sprintf("Hi, %s. nice %s ip", m.user.name, m.remoteAddr), m.luna.View(), backMsg)
+	content := lipgloss.JoinVertical(lipgloss.Center, fmt.Sprintf("Hi, %s. nice ip (%s) ;)", m.user.name, m.remoteAddr), m.luna.View(), backMsg)
 
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
+}
+
+func removePort(ip string) string {
+	host, _, err := net.SplitHostPort(ip)
+	if err != nil {
+		return ip
+	}
+	return host
 }
