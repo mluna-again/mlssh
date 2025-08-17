@@ -62,6 +62,8 @@ func newModel(s ssh.Session) (model, []error) {
 	if len(err) > 0 {
 		return model{}, err
 	}
+	l.DisableKeys()
+
 	pty, _, _ := s.Pty()
 
 	renderer := bubbletea.MakeRenderer(s)
