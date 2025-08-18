@@ -11,7 +11,7 @@ import (
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (name, public_key) VALUES (?, ?)
-RETURNING public_key, name
+RETURNING public_key, name, next_activity_change_at
 `
 
 type CreateUserParams struct {
@@ -22,18 +22,36 @@ type CreateUserParams struct {
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, createUser, arg.Name, arg.PublicKey)
 	var i User
-	err := row.Scan(&i.PublicKey, &i.Name)
+	err := row.Scan(&i.PublicKey, &i.Name, &i.NextActivityChangeAt)
 	return i, err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT public_key, name FROM users
+SELECT public_key, name, next_activity_change_at FROM users
 WHERE public_key = ? LIMIT 1
 `
 
 func (q *Queries) GetUser(ctx context.Context, publicKey string) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUser, publicKey)
 	var i User
-	err := row.Scan(&i.PublicKey, &i.Name)
+	err := row.Scan(&i.PublicKey, &i.Name, &i.NextActivityChangeAt)
+	return i, err
+}
+
+const updateUser = `-- name: UpdateUser :one
+UPDATE users
+SET name = COALESCE(?, name), next_activity_change_at = COALESCE(?, next_activity_change_at)
+RETURNING public_key, name, next_activity_change_at
+`
+
+type UpdateUserParams struct {
+	Name                 string
+	NextActivityChangeAt int64
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUser, arg.Name, arg.NextActivityChangeAt)
+	var i User
+	err := row.Scan(&i.PublicKey, &i.Name, &i.NextActivityChangeAt)
 	return i, err
 }

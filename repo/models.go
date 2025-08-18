@@ -5,6 +5,7 @@
 package repo
 
 type User struct {
-	PublicKey string
-	Name      string
+	PublicKey            string
+	Name                 string
+	NextActivityChangeAt int64
 }
