@@ -2,6 +2,7 @@ package main
 
 import (
 	"strings"
+	"unicode/utf8"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -25,6 +26,8 @@ type signinScreen struct {
 	boxS              lipgloss.Style
 	boxFocusedS       lipgloss.Style
 	blockS            lipgloss.Style
+	btnS              lipgloss.Style
+	btnFocusedS       lipgloss.Style
 
 	renderer          *lipgloss.Renderer
 	focusedInput      signinField
@@ -57,6 +60,20 @@ func newSigninScreen(r *lipgloss.Renderer) signinScreen {
 		Background(fg).
 		Foreground(bg)
 
+	btnS := r.NewStyle().
+		Background(gray).
+		Foreground(bg).
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(gray).
+		BorderBackground(gray)
+
+	btnFocusedS := r.NewStyle().
+		Background(fg).
+		Foreground(bg).
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(fg).
+		BorderBackground(fg)
+
 	nameInput := textinput.New()
 	nameInput.Placeholder = "Hatchling"
 	nameInput.Prompt = ""
@@ -74,6 +91,8 @@ func newSigninScreen(r *lipgloss.Renderer) signinScreen {
 		renderer:          r,
 		availablePets:     []string{"Cat", "Bunny", "Turtle"},
 		availableVariants: []string{"Ragdoll", "Black"},
+		btnFocusedS:       btnFocusedS,
+		btnS:              btnS,
 	}
 }
 
@@ -127,7 +146,11 @@ func (s signinScreen) Update(msg tea.Msg) (signinScreen, tea.Cmd) {
 			case signinName:
 				s.focusedInput = signinPet
 			case signinPet:
-				s.focusedInput = signinVariant
+				if s.hasVariants() {
+					s.focusedInput = signinVariant
+				} else {
+					s.focusedInput = signinGo
+				}
 			case signinVariant:
 				s.focusedInput = signinGo
 			case signinGo:
@@ -154,7 +177,6 @@ func (s signinScreen) View() string {
 	niinput := s.nameInput.View()
 	niinputW := lipgloss.Width(niinput)
 	ni := nis.Render(niinput)
-	ni = lipgloss.JoinVertical(lipgloss.Center, "WHO IS THE USER?", ni)
 
 	// PETS CHOICES
 	pbS := s.boxFocusedS
@@ -194,9 +216,18 @@ func (s signinScreen) View() string {
 		variants = vS.Render(p.String())
 	}
 
-	// SAVE BUTTON
+	// Go BUTTON
+	goS := s.btnS
+	if s.focusedInput == signinGo {
+		goS = s.btnFocusedS
+	}
+	goMsg := "GO"
+	if utf8.RuneCount([]byte(s.nameInput.Value())) < 1 {
+		goMsg = "Fill your companion info"
+	}
+	goBtn := goS.Render(lipgloss.PlaceHorizontal(niinputW, lipgloss.Center, goMsg))
 
-	return lipgloss.Place(s.width, s.heigth, lipgloss.Center, lipgloss.Center, lipgloss.JoinVertical(lipgloss.Top, ni, pets, variants))
+	return lipgloss.Place(s.width, s.heigth, lipgloss.Center, lipgloss.Center, lipgloss.JoinVertical(lipgloss.Top, ni, pets, variants, goBtn))
 }
 
 func (s *signinScreen) SetHeight(h int) {
@@ -205,4 +236,8 @@ func (s *signinScreen) SetHeight(h int) {
 
 func (s *signinScreen) SetWidth(w int) {
 	s.width = w
+}
+
+func (s signinScreen) hasVariants() bool {
+	return s.availablePets[s.petIndex] == "Cat"
 }
