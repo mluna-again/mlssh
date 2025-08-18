@@ -25,7 +25,7 @@ func randDateInTheFuture() int64 {
 		return time.Now().Unix() + 10
 	}
 
-	return time.Now().Unix() + int64(offset*60)
+	return time.Now().Unix() + int64(offset)
 }
 
 func (m model) randActivity() luna.LunaAnimation {
