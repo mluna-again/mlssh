@@ -99,7 +99,7 @@ func newModel(s ssh.Session) (model, []error) {
 		remoteAddr:        removePort(s.RemoteAddr().String()),
 		user:              u,
 		homescreen:        newHomescreen(u, renderer),
-		signinscreen:      newSigninScreen(),
+		signinscreen:      newSigninScreen(renderer),
 		renderer:          renderer,
 	}
 
@@ -179,6 +179,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	if !m.ready {
+		return "loading..."
+	}
+
 	if m.quitting && m.err != nil {
 		return "sorry, something went wrong! see you!"
 	}

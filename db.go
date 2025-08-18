@@ -72,7 +72,7 @@ func (m model) connectToDB() tea.Msg {
 			// use the provided username, it's whatever
 			name:      m.originalUsername,
 			publicKey: userWithSettings.PublicKey,
-			isNew:     !userWithSettings.Active,
+			isNew:     !userWithSettings.InsertedAt.Valid,
 		},
 	}
 }

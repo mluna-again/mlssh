@@ -1,5 +1,5 @@
 -- name: GetUser :one
-SELECT *, settings.inserted_at != NULL AS active FROM users
+SELECT * FROM users
 LEFT JOIN settings ON settings.user_pk = users.public_key
 WHERE public_key = ?
 LIMIT 1;

@@ -28,7 +28,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUser = `-- name: GetUser :one
-SELECT public_key, name, next_activity_change_at, user_pk, pet_species, pet_color, inserted_at, settings.inserted_at != NULL AS active FROM users
+SELECT public_key, name, next_activity_change_at, user_pk, pet_species, pet_color, inserted_at FROM users
 LEFT JOIN settings ON settings.user_pk = users.public_key
 WHERE public_key = ?
 LIMIT 1
@@ -42,7 +42,6 @@ type GetUserRow struct {
 	PetSpecies           sql.NullString
 	PetColor             sql.NullString
 	InsertedAt           sql.NullInt64
-	Active               bool
 }
 
 func (q *Queries) GetUser(ctx context.Context, publicKey string) (GetUserRow, error) {
@@ -56,7 +55,6 @@ func (q *Queries) GetUser(ctx context.Context, publicKey string) (GetUserRow, er
 		&i.PetSpecies,
 		&i.PetColor,
 		&i.InsertedAt,
-		&i.Active,
 	)
 	return i, err
 }
