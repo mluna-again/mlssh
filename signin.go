@@ -26,12 +26,14 @@ type signinScreen struct {
 	boxFocusedS       lipgloss.Style
 	blockS            lipgloss.Style
 
-	renderer     *lipgloss.Renderer
-	focusedInput signinField
-	width        int
-	heigth       int
-	availabePets []string
-	petIndex     int
+	renderer          *lipgloss.Renderer
+	focusedInput      signinField
+	width             int
+	heigth            int
+	availablePets     []string
+	availableVariants []string
+	petIndex          int
+	variantIndex      int
 }
 
 func newSigninScreen(r *lipgloss.Renderer) signinScreen {
@@ -70,7 +72,8 @@ func newSigninScreen(r *lipgloss.Renderer) signinScreen {
 		nameInputFocusedS: nameInputFocusedS,
 		blockS:            blockS,
 		renderer:          r,
-		availabePets:      []string{"Cat", "Bunny", "Turtle"},
+		availablePets:     []string{"Cat", "Bunny", "Turtle"},
+		availableVariants: []string{"Ragdoll", "Black"},
 	}
 }
 
@@ -87,19 +90,35 @@ func (s signinScreen) Update(msg tea.Msg) (signinScreen, tea.Cmd) {
 		switch msg.String() {
 		case "right":
 			if s.focusedInput == signinPet {
-				if s.petIndex == len(s.availabePets)-1 {
+				if s.petIndex == len(s.availablePets)-1 {
 					s.petIndex = 0
 				} else {
 					s.petIndex++
 				}
 			}
 
+			if s.focusedInput == signinVariant {
+				if s.variantIndex == len(s.availableVariants)-1 {
+					s.variantIndex = 0
+				} else {
+					s.variantIndex++
+				}
+			}
+
 		case "left":
 			if s.focusedInput == signinPet {
 				if s.petIndex == 0 {
-					s.petIndex = len(s.availabePets) - 1
+					s.petIndex = len(s.availablePets) - 1
 				} else {
 					s.petIndex--
+				}
+			}
+
+			if s.focusedInput == signinVariant {
+				if s.variantIndex == 0 {
+					s.variantIndex = len(s.availableVariants) - 1
+				} else {
+					s.variantIndex--
 				}
 			}
 
@@ -127,21 +146,24 @@ func (s signinScreen) Update(msg tea.Msg) (signinScreen, tea.Cmd) {
 }
 
 func (s signinScreen) View() string {
+	// NAME INPUT
 	nis := s.nameInputFocusedS
 	if s.focusedInput != signinName {
 		nis = s.nameInputS
 	}
 	niinput := s.nameInput.View()
+	niinputW := lipgloss.Width(niinput)
 	ni := nis.Render(niinput)
 	ni = lipgloss.JoinVertical(lipgloss.Center, "WHO IS THE USER?", ni)
 
+	// PETS CHOICES
 	pbS := s.boxFocusedS
 	if s.focusedInput != signinPet {
 		pbS = s.boxS
 	}
 	p := strings.Builder{}
-	for i, pet := range s.availabePets {
-		w := lipgloss.Width(niinput) / len(s.availabePets)
+	for i, pet := range s.availablePets {
+		w := niinputW / len(s.availablePets)
 
 		if s.petIndex == i {
 			p.WriteString(s.blockS.Render(lipgloss.PlaceHorizontal(w, lipgloss.Center, pet)))
@@ -151,7 +173,30 @@ func (s signinScreen) View() string {
 	}
 	pets := pbS.Render(p.String())
 
-	return lipgloss.Place(s.width, s.heigth, lipgloss.Center, lipgloss.Center, lipgloss.JoinVertical(lipgloss.Top, ni, pets))
+	// PET VARIANT CHOICES
+	vS := s.boxS
+	if s.focusedInput == signinVariant {
+		vS = s.boxFocusedS
+	}
+	variants := vS.Render(lipgloss.PlaceHorizontal(niinputW, lipgloss.Center, "No variants for this species"))
+	if s.availablePets[s.petIndex] == "Cat" {
+		p := strings.Builder{}
+		for i, variant := range s.availableVariants {
+			w := niinputW / len(s.availableVariants)
+
+			if s.variantIndex == i {
+				p.WriteString(s.blockS.Render(lipgloss.PlaceHorizontal(w, lipgloss.Center, variant)))
+			} else {
+				p.WriteString(lipgloss.PlaceHorizontal(w, lipgloss.Center, variant))
+			}
+		}
+
+		variants = vS.Render(p.String())
+	}
+
+	// SAVE BUTTON
+
+	return lipgloss.Place(s.width, s.heigth, lipgloss.Center, lipgloss.Center, lipgloss.JoinVertical(lipgloss.Top, ni, pets, variants))
 }
 
 func (s *signinScreen) SetHeight(h int) {
