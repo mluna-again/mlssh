@@ -30,10 +30,9 @@ func (m model) connectToDB() tea.Msg {
 
 	queries := repo.New(db)
 
-	newUser := false
 	ctx, cancel := aLittleBit()
 	defer cancel()
-	u, err := queries.GetUser(ctx, m.originalPublicKey)
+	userWithSettings, err := queries.GetUser(ctx, m.originalPublicKey)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Error(err)
 		return connectToDBMsg{err: err}
@@ -41,18 +40,30 @@ func (m model) connectToDB() tea.Msg {
 
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		log.Info(fmt.Sprintf("creating a new user: %s", m.originalUsername))
-		u, err = queries.CreateUser(ctx, repo.CreateUserParams{
+		u, err := queries.CreateUser(ctx, repo.CreateUserParams{
 			Name:      m.originalUsername,
 			PublicKey: m.originalPublicKey,
 		})
-		newUser = true
 		if err != nil {
 			log.Error(err)
 			return connectToDBMsg{err: err}
 		}
+
+		log.Info(fmt.Sprintf("user %s logged", u.Name))
+		return connectToDBMsg{
+			db:      db,
+			err:     nil,
+			queries: queries,
+			user: user{
+				// use the provided username, it's whatever
+				name:      m.originalUsername,
+				publicKey: u.PublicKey,
+				isNew:     true,
+			},
+		}
 	}
 
-	log.Info(fmt.Sprintf("user %s logged", u.Name))
+	log.Info(fmt.Sprintf("user %s logged", userWithSettings.Name))
 	return connectToDBMsg{
 		db:      db,
 		err:     nil,
@@ -60,8 +71,8 @@ func (m model) connectToDB() tea.Msg {
 		user: user{
 			// use the provided username, it's whatever
 			name:      m.originalUsername,
-			publicKey: u.PublicKey,
-			isNew:     newUser,
+			publicKey: userWithSettings.PublicKey,
+			isNew:     !userWithSettings.Active,
 		},
 	}
 }

@@ -7,6 +7,7 @@ package repo
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -27,14 +28,36 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUser = `-- name: GetUser :one
-SELECT public_key, name, next_activity_change_at FROM users
-WHERE public_key = ? LIMIT 1
+SELECT public_key, name, next_activity_change_at, user_pk, pet_species, pet_color, inserted_at, settings.inserted_at != NULL AS active FROM users
+LEFT JOIN settings ON settings.user_pk = users.public_key
+WHERE public_key = ?
+LIMIT 1
 `
 
-func (q *Queries) GetUser(ctx context.Context, publicKey string) (User, error) {
+type GetUserRow struct {
+	PublicKey            string
+	Name                 string
+	NextActivityChangeAt int64
+	UserPk               sql.NullInt64
+	PetSpecies           sql.NullString
+	PetColor             sql.NullString
+	InsertedAt           sql.NullInt64
+	Active               bool
+}
+
+func (q *Queries) GetUser(ctx context.Context, publicKey string) (GetUserRow, error) {
 	row := q.db.QueryRowContext(ctx, getUser, publicKey)
-	var i User
-	err := row.Scan(&i.PublicKey, &i.Name, &i.NextActivityChangeAt)
+	var i GetUserRow
+	err := row.Scan(
+		&i.PublicKey,
+		&i.Name,
+		&i.NextActivityChangeAt,
+		&i.UserPk,
+		&i.PetSpecies,
+		&i.PetColor,
+		&i.InsertedAt,
+		&i.Active,
+	)
 	return i, err
 }
 

@@ -4,6 +4,17 @@
 
 package repo
 
+import (
+	"database/sql"
+)
+
+type Setting struct {
+	UserPk     sql.NullInt64
+	PetSpecies sql.NullString
+	PetColor   sql.NullString
+	InsertedAt sql.NullInt64
+}
+
 type User struct {
 	PublicKey            string
 	Name                 string
