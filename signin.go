@@ -303,6 +303,7 @@ func (s signinScreen) createSettings() tea.Msg {
 		sv = settings.PetColor.String
 	}
 
+	log.Infof("new settings for %s: %s, %s, %s", s.user.name, settings.PetName, settings.PetSpecies, sv)
 	return newSettingsMsg{
 		pet:     settings.PetSpecies,
 		variant: sv,
