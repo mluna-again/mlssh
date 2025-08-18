@@ -58,7 +58,7 @@ func (m model) connectToDB() tea.Msg {
 			return connectToDBMsg{err: err}
 		}
 
-		log.Info(fmt.Sprintf("user %s logged", u.Name))
+		log.Info(fmt.Sprintf("new user %s logged", u.Name))
 		return connectToDBMsg{
 			db:      db,
 			err:     nil,
