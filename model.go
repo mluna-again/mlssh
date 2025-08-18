@@ -16,6 +16,7 @@ type availableScreen int
 
 const (
 	home availableScreen = iota
+	signin
 )
 
 type user struct {
@@ -48,13 +49,15 @@ type model struct {
 	queries  *repo.Queries
 	quitting bool
 	err      error
+	ready    bool
 
 	// screen managment
 	currentScreen availableScreen
 
 	// components
-	luna       luna.LunaModel
-	homescreen homescreen
+	luna         luna.LunaModel
+	homescreen   homescreen
+	signinscreen signinScreen
 }
 
 func newModel(s ssh.Session) (model, []error) {
@@ -96,6 +99,7 @@ func newModel(s ssh.Session) (model, []error) {
 		remoteAddr:        removePort(s.RemoteAddr().String()),
 		user:              u,
 		homescreen:        newHomescreen(u, renderer),
+		signinscreen:      newSigninScreen(),
 		renderer:          renderer,
 	}
 
@@ -135,7 +139,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.queries = msg.queries
 		m.user = msg.user
 
+		m.ready = true
 		m.homescreen.SetUser(msg.user)
+
+		if m.user.isNew {
+			m.currentScreen = signin
+		}
 
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
@@ -156,6 +165,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case home:
 		m.homescreen, cmd = m.homescreen.Update(msg)
 		cmds = append(cmds, cmd)
+
+	case signin:
+		m.signinscreen, cmd = m.signinscreen.Update(msg)
+		cmds = append(cmds, cmd)
 	}
 
 	var lunaCmd tea.Cmd
@@ -174,12 +187,16 @@ func (m model) View() string {
 		return "bye!"
 	}
 
-	screen := ""
 	switch m.currentScreen {
 	case home:
-		screen = m.homescreen.View()
+		screen := m.homescreen.View()
+		petCentered := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, m.luna.View())
+		return lipgloss.JoinVertical(lipgloss.Top, screen, petCentered)
+
+	case signin:
+		screen := m.signinscreen.View()
+		return screen
 	}
 
-	petCentered := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, m.luna.View())
-	return lipgloss.JoinVertical(lipgloss.Top, screen, petCentered)
+	return "you should not be able to see this"
 }
