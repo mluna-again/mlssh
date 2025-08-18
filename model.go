@@ -31,6 +31,7 @@ type model struct {
 	originalPublicKey string
 	remoteAddr        string
 	user              user
+	settings          settings
 
 	// styles
 	txtStyle  lipgloss.Style
@@ -61,7 +62,11 @@ type model struct {
 }
 
 func newModel(s ssh.Session) (model, []error) {
-	l, err := luna.NewLuna(luna.NewLunaParams{Animation: luna.SLEEPING, Pet: luna.CAT, Size: luna.SMALL})
+	l, err := luna.NewLuna(luna.NewLunaParams{
+		Animation: luna.SLEEPING,
+		Pet:       luna.CAT,
+		Size:      luna.SMALL,
+	})
 	if len(err) > 0 {
 		return model{}, err
 	}
@@ -148,6 +153,30 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentScreen = signin
 		}
 
+		m.settings = msg.settings
+		m.updateLuna()
+
+	case newSettingsMsg:
+		if msg.ignore {
+			break
+		}
+
+		if msg.err != nil {
+			m.quitting = true
+			m.err = msg.err
+			log.Error(msg.err)
+			return m, quitSlowly
+		}
+
+		m.settings = settings{
+			species:    getLunaPet(msg.pet),
+			color:      msg.variant,
+			name:       msg.name,
+			readyToUse: true,
+		}
+		m.updateLuna()
+		m.currentScreen = home
+
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.width = msg.Width
@@ -161,7 +190,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q", "ctrl+c":
+		case "ctrl+c":
 			return m, tea.Quit
 		}
 	}
@@ -208,4 +237,13 @@ func (m model) View() string {
 	}
 
 	return "you should not be able to see this"
+}
+
+func (m *model) updateLuna() {
+	if !m.settings.readyToUse {
+		return
+	}
+
+	log.Info("new settings loaded")
+	m.luna.SetPet(m.settings.species)
 }

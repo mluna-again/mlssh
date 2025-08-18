@@ -4,6 +4,9 @@ import (
 	"context"
 	"net"
 	"time"
+
+	"github.com/charmbracelet/log"
+	"github.com/mluna-again/luna/luna"
 )
 
 func aLittleBit() (context.Context, context.CancelFunc) {
@@ -17,4 +20,21 @@ func removePort(ip string) string {
 		return ip
 	}
 	return host
+}
+
+func getLunaPet(name string) luna.LunaPet {
+	switch name {
+	case "Cat":
+		return luna.CAT
+
+	case "Turtle":
+		return luna.TURTLE
+
+	case "Bunny":
+		return luna.BUNNY
+
+	default:
+		log.Warnf("unkown pet: %s", name)
+		return luna.CAT
+	}
 }

@@ -22,3 +22,7 @@ INSERT INTO settings (
   inserted_at
 ) VALUES (?, ?, ?, ?, UNIXEPOCH())
 RETURNING *;
+
+-- name: GetSettings :one
+SELECT * FROM settings
+WHERE user_pk = ?;

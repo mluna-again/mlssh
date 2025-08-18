@@ -63,6 +63,24 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getSettings = `-- name: GetSettings :one
+SELECT user_pk, pet_species, pet_color, inserted_at, pet_name FROM settings
+WHERE user_pk = ?
+`
+
+func (q *Queries) GetSettings(ctx context.Context, userPk string) (Setting, error) {
+	row := q.db.QueryRowContext(ctx, getSettings, userPk)
+	var i Setting
+	err := row.Scan(
+		&i.UserPk,
+		&i.PetSpecies,
+		&i.PetColor,
+		&i.InsertedAt,
+		&i.PetName,
+	)
+	return i, err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT public_key, name, next_activity_change_at, user_pk, pet_species, pet_color, inserted_at, pet_name FROM users
 LEFT JOIN settings ON settings.user_pk = users.public_key

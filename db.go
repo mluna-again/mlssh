@@ -7,14 +7,23 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/log"
+	"github.com/mluna-again/luna/luna"
 	"github.com/mluna-again/mlssh/repo"
 )
 
+type settings struct {
+	species    luna.LunaPet
+	name       string
+	color      string
+	readyToUse bool
+}
+
 type connectToDBMsg struct {
-	db      *sql.DB
-	queries *repo.Queries
-	err     error
-	user    user
+	db       *sql.DB
+	queries  *repo.Queries
+	err      error
+	user     user
+	settings settings
 }
 
 func (m model) connectToDB() tea.Msg {
@@ -64,6 +73,15 @@ func (m model) connectToDB() tea.Msg {
 	}
 
 	log.Info(fmt.Sprintf("user %s logged", userWithSettings.Name))
+
+	settings := settings{readyToUse: false}
+	if userWithSettings.InsertedAt.Valid {
+		settings.color = userWithSettings.PetColor.String
+		settings.species = getLunaPet(userWithSettings.PetSpecies.String)
+		settings.name = userWithSettings.PetName.String
+		settings.readyToUse = true
+	}
+
 	return connectToDBMsg{
 		db:      db,
 		err:     nil,
@@ -74,5 +92,6 @@ func (m model) connectToDB() tea.Msg {
 			publicKey: userWithSettings.PublicKey,
 			isNew:     !userWithSettings.InsertedAt.Valid,
 		},
+		settings: settings,
 	}
 }
