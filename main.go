@@ -28,6 +28,7 @@ var migrations embed.FS
 
 func main() {
 	log.Info("Running migrations... ")
+	migrateDatabase()
 	log.Info("Migrations ran.")
 
 	host := os.Getenv("MLSSH_HOST")
