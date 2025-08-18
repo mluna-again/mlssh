@@ -246,4 +246,6 @@ func (m *model) updateLuna() {
 
 	log.Info("new settings loaded")
 	m.luna.SetPet(m.settings.species)
+	m.luna.SetName(m.settings.name)
+	m.luna.ShowName()
 }
