@@ -9,6 +9,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+type newSettingsMsg struct {
+	pet     string
+	variant string
+	name    string
+}
+
 type signinField int
 
 const (
