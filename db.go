@@ -14,7 +14,7 @@ import (
 type settings struct {
 	species    luna.LunaPet
 	name       string
-	color      string
+	color      luna.LunaVariant
 	readyToUse bool
 }
 
@@ -76,7 +76,7 @@ func (m model) connectToDB() tea.Msg {
 
 	settings := settings{readyToUse: false}
 	if userWithSettings.InsertedAt.Valid {
-		settings.color = userWithSettings.PetColor.String
+		settings.color = getLunaVariant(userWithSettings.PetColor.String)
 		settings.species = getLunaPet(userWithSettings.PetSpecies.String)
 		settings.name = userWithSettings.PetName.String
 		settings.readyToUse = true

@@ -170,7 +170,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.settings = settings{
 			species:    getLunaPet(msg.pet),
-			color:      msg.variant,
+			color:      getLunaVariant(msg.variant),
 			name:       msg.name,
 			readyToUse: true,
 		}
@@ -244,8 +244,9 @@ func (m *model) updateLuna() {
 		return
 	}
 
-	log.Info("new settings loaded")
+	log.Infof("%s new settings loaded", m.user.name)
 	m.luna.SetPet(m.settings.species)
 	m.luna.SetName(m.settings.name)
+	m.luna.SetVariant(m.settings.color)
 	m.luna.ShowName()
 }

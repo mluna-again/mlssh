@@ -9,7 +9,7 @@ require (
 	github.com/charmbracelet/log v0.4.2
 	github.com/charmbracelet/ssh v0.0.0-20250429213052-383d50896132
 	github.com/charmbracelet/wish v1.4.7
-	github.com/mluna-again/luna v0.1.8
+	github.com/mluna-again/luna v0.1.10
 	github.com/pressly/goose/v3 v3.24.3
 	modernc.org/sqlite v1.38.2
 )

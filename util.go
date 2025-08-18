@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -37,4 +38,8 @@ func getLunaPet(name string) luna.LunaPet {
 		log.Warnf("unkown pet: %s", name)
 		return luna.CAT
 	}
+}
+
+func getLunaVariant(name string) luna.LunaVariant {
+	return luna.LunaVariant(strings.ToLower(name))
 }
