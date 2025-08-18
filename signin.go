@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -12,16 +14,24 @@ const (
 	signinName signinField = iota
 	signinPet
 	signinVariant
+	signinGo
 )
 
 type signinScreen struct {
-	nameInput         textinput.Model
+	nameInput textinput.Model
+
 	nameInputS        lipgloss.Style
 	nameInputFocusedS lipgloss.Style
-	renderer          *lipgloss.Renderer
-	focusedInput      signinField
-	width             int
-	heigth            int
+	boxS              lipgloss.Style
+	boxFocusedS       lipgloss.Style
+	blockS            lipgloss.Style
+
+	renderer     *lipgloss.Renderer
+	focusedInput signinField
+	width        int
+	heigth       int
+	availabePets []string
+	petIndex     int
 }
 
 func newSigninScreen(r *lipgloss.Renderer) signinScreen {
@@ -33,18 +43,34 @@ func newSigninScreen(r *lipgloss.Renderer) signinScreen {
 		Border(lipgloss.NormalBorder()).
 		BorderForeground(fg)
 
+	boxFocusedS := r.NewStyle().
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(fg)
+
+	boxS := r.NewStyle().
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(gray)
+
+	blockS := r.NewStyle().
+		Background(fg).
+		Foreground(bg)
+
 	nameInput := textinput.New()
 	nameInput.Placeholder = "Hatchling"
 	nameInput.Prompt = ""
 	nameInput.Focus()
 	nameInput.CharLimit = 30
-	nameInput.Width = 28
+	nameInput.Width = 29 // this number + 1 (idk why lipgloss.Width returns it +1) has to be divisible by len(availabePets)
 
 	return signinScreen{
 		nameInput:         nameInput,
 		nameInputS:        nameInputS,
+		boxS:              boxS,
+		boxFocusedS:       boxFocusedS,
 		nameInputFocusedS: nameInputFocusedS,
+		blockS:            blockS,
 		renderer:          r,
+		availabePets:      []string{"Cat", "Bunny", "Turtle"},
 	}
 }
 
@@ -59,6 +85,24 @@ func (s signinScreen) Update(msg tea.Msg) (signinScreen, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
+		case "right":
+			if s.focusedInput == signinPet {
+				if s.petIndex == len(s.availabePets)-1 {
+					s.petIndex = 0
+				} else {
+					s.petIndex++
+				}
+			}
+
+		case "left":
+			if s.focusedInput == signinPet {
+				if s.petIndex == 0 {
+					s.petIndex = len(s.availabePets) - 1
+				} else {
+					s.petIndex--
+				}
+			}
+
 		case "tab":
 			switch s.focusedInput {
 			case signinName:
@@ -66,6 +110,8 @@ func (s signinScreen) Update(msg tea.Msg) (signinScreen, tea.Cmd) {
 			case signinPet:
 				s.focusedInput = signinVariant
 			case signinVariant:
+				s.focusedInput = signinGo
+			case signinGo:
 				s.focusedInput = signinName
 			}
 			return s, nil
@@ -85,10 +131,27 @@ func (s signinScreen) View() string {
 	if s.focusedInput != signinName {
 		nis = s.nameInputS
 	}
-	ni := nis.Render(s.nameInput.View())
-	ni = lipgloss.JoinVertical(lipgloss.Top, "What name do you want to give it?", ni)
+	niinput := s.nameInput.View()
+	ni := nis.Render(niinput)
+	ni = lipgloss.JoinVertical(lipgloss.Center, "WHO IS THE USER?", ni)
 
-	return lipgloss.Place(s.width, s.heigth, lipgloss.Center, lipgloss.Center, lipgloss.JoinVertical(lipgloss.Top, ni))
+	pbS := s.boxFocusedS
+	if s.focusedInput != signinPet {
+		pbS = s.boxS
+	}
+	p := strings.Builder{}
+	for i, pet := range s.availabePets {
+		w := lipgloss.Width(niinput) / len(s.availabePets)
+
+		if s.petIndex == i {
+			p.WriteString(s.blockS.Render(lipgloss.PlaceHorizontal(w, lipgloss.Center, pet)))
+		} else {
+			p.WriteString(lipgloss.PlaceHorizontal(w, lipgloss.Center, pet))
+		}
+	}
+	pets := pbS.Render(p.String())
+
+	return lipgloss.Place(s.width, s.heigth, lipgloss.Center, lipgloss.Center, lipgloss.JoinVertical(lipgloss.Top, ni, pets))
 }
 
 func (s *signinScreen) SetHeight(h int) {
