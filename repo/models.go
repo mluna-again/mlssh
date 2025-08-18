@@ -9,10 +9,11 @@ import (
 )
 
 type Setting struct {
-	UserPk     sql.NullInt64
-	PetSpecies sql.NullString
+	UserPk     string
+	PetSpecies string
 	PetColor   sql.NullString
 	InsertedAt sql.NullInt64
+	PetName    string
 }
 
 type User struct {

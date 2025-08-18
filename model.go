@@ -98,9 +98,11 @@ func newModel(s ssh.Session) (model, []error) {
 		originalPublicKey: pkStr,
 		remoteAddr:        removePort(s.RemoteAddr().String()),
 		user:              u,
-		homescreen:        newHomescreen(u, renderer),
-		signinscreen:      newSigninScreen(renderer),
-		renderer:          renderer,
+		// TODO: remove user, i should fetch it from the connectToDBMsg event to avoid having stale data
+		//       check signinscreen to see how to do it
+		homescreen:   newHomescreen(u, renderer),
+		signinscreen: newSigninScreen(renderer),
+		renderer:     renderer,
 	}
 
 	return m, nil

@@ -10,6 +10,42 @@ import (
 	"database/sql"
 )
 
+const createSettings = `-- name: CreateSettings :one
+INSERT INTO settings (
+  user_pk,
+  pet_species,
+  pet_color,
+  pet_name,
+  inserted_at
+) VALUES (?, ?, ?, ?, UNIXEPOCH())
+RETURNING user_pk, pet_species, pet_color, inserted_at, pet_name
+`
+
+type CreateSettingsParams struct {
+	UserPk     string
+	PetSpecies string
+	PetColor   sql.NullString
+	PetName    string
+}
+
+func (q *Queries) CreateSettings(ctx context.Context, arg CreateSettingsParams) (Setting, error) {
+	row := q.db.QueryRowContext(ctx, createSettings,
+		arg.UserPk,
+		arg.PetSpecies,
+		arg.PetColor,
+		arg.PetName,
+	)
+	var i Setting
+	err := row.Scan(
+		&i.UserPk,
+		&i.PetSpecies,
+		&i.PetColor,
+		&i.InsertedAt,
+		&i.PetName,
+	)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (name, public_key) VALUES (?, ?)
 RETURNING public_key, name, next_activity_change_at
@@ -28,7 +64,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUser = `-- name: GetUser :one
-SELECT public_key, name, next_activity_change_at, user_pk, pet_species, pet_color, inserted_at FROM users
+SELECT public_key, name, next_activity_change_at, user_pk, pet_species, pet_color, inserted_at, pet_name FROM users
 LEFT JOIN settings ON settings.user_pk = users.public_key
 WHERE public_key = ?
 LIMIT 1
@@ -38,10 +74,11 @@ type GetUserRow struct {
 	PublicKey            string
 	Name                 string
 	NextActivityChangeAt int64
-	UserPk               sql.NullInt64
+	UserPk               sql.NullString
 	PetSpecies           sql.NullString
 	PetColor             sql.NullString
 	InsertedAt           sql.NullInt64
+	PetName              sql.NullString
 }
 
 func (q *Queries) GetUser(ctx context.Context, publicKey string) (GetUserRow, error) {
@@ -55,6 +92,7 @@ func (q *Queries) GetUser(ctx context.Context, publicKey string) (GetUserRow, er
 		&i.PetSpecies,
 		&i.PetColor,
 		&i.InsertedAt,
+		&i.PetName,
 	)
 	return i, err
 }

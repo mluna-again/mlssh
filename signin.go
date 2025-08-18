@@ -1,18 +1,23 @@
 package main
 
 import (
+	"database/sql"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/log"
+	"github.com/mluna-again/mlssh/repo"
 )
 
 type newSettingsMsg struct {
 	pet     string
 	variant string
 	name    string
+	ignore  bool
+	err     error
 }
 
 type signinField int
@@ -43,6 +48,9 @@ type signinScreen struct {
 	availableVariants []string
 	petIndex          int
 	variantIndex      int
+
+	user    *user
+	queries *repo.Queries
 }
 
 func newSigninScreen(r *lipgloss.Renderer) signinScreen {
@@ -99,6 +107,7 @@ func newSigninScreen(r *lipgloss.Renderer) signinScreen {
 		availableVariants: []string{"Ragdoll", "Black"},
 		btnFocusedS:       btnFocusedS,
 		btnS:              btnS,
+		user:              nil,
 	}
 }
 
@@ -111,6 +120,12 @@ func (s signinScreen) Update(msg tea.Msg) (signinScreen, tea.Cmd) {
 	cmds := []tea.Cmd{}
 
 	switch msg := msg.(type) {
+	case connectToDBMsg:
+		if msg.err == nil {
+			s.user = &msg.user
+			s.queries = msg.queries
+		}
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "right":
@@ -146,6 +161,13 @@ func (s signinScreen) Update(msg tea.Msg) (signinScreen, tea.Cmd) {
 					s.variantIndex--
 				}
 			}
+
+		case "enter":
+			if s.focusedInput != signinGo || !s.infoComplete() {
+				break
+			}
+
+			return s, s.createSettings
 
 		case "tab":
 			switch s.focusedInput {
@@ -228,8 +250,11 @@ func (s signinScreen) View() string {
 		goS = s.btnFocusedS
 	}
 	goMsg := "GO"
-	if utf8.RuneCount([]byte(s.nameInput.Value())) < 1 {
+	if !s.infoComplete() {
 		goMsg = "Fill your companion info"
+	}
+	if s.user == nil {
+		goMsg = "Just a moment, please..."
 	}
 	goBtn := goS.Render(lipgloss.PlaceHorizontal(niinputW, lipgloss.Center, goMsg))
 
@@ -246,4 +271,53 @@ func (s *signinScreen) SetWidth(w int) {
 
 func (s signinScreen) hasVariants() bool {
 	return s.availablePets[s.petIndex] == "Cat"
+}
+
+func (s signinScreen) createSettings() tea.Msg {
+	// this should *NOT* happen, but just make sure
+	if s.user == nil {
+		log.Warn("someone somehow clicked the Go button when user was not loaded")
+		return newSettingsMsg{ignore: true}
+	}
+
+	// create settings
+	color := sql.NullString{}
+	variant := s.getVariant()
+	if variant != "" {
+		color = sql.NullString{Valid: true, String: variant}
+	}
+	ctx, cancel := aLittleBit()
+	defer cancel()
+	settings, err := s.queries.CreateSettings(ctx, repo.CreateSettingsParams{
+		UserPk:     s.user.publicKey,
+		PetSpecies: s.availablePets[s.petIndex],
+		PetName:    s.nameInput.Value(),
+		PetColor:   color,
+	})
+	if err != nil {
+		return newSettingsMsg{err: err}
+	}
+
+	sv := ""
+	if settings.PetColor.Valid {
+		sv = settings.PetColor.String
+	}
+
+	return newSettingsMsg{
+		pet:     settings.PetSpecies,
+		variant: sv,
+		name:    settings.PetName,
+	}
+}
+
+func (s signinScreen) infoComplete() bool {
+	return utf8.RuneCount([]byte(s.nameInput.Value())) > 1
+}
+
+func (s signinScreen) getVariant() string {
+	if s.availablePets[s.petIndex] == "Cat" {
+		return s.availableVariants[s.variantIndex]
+	}
+
+	return ""
 }

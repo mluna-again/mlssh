@@ -13,3 +13,12 @@ UPDATE users
 SET name = COALESCE(?, name), next_activity_change_at = COALESCE(?, next_activity_change_at)
 RETURNING *;
 
+-- name: CreateSettings :one
+INSERT INTO settings (
+  user_pk,
+  pet_species,
+  pet_color,
+  pet_name,
+  inserted_at
+) VALUES (?, ?, ?, ?, UNIXEPOCH())
+RETURNING *;

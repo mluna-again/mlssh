@@ -1,8 +1,8 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE settings (
-  user_pk INTEGER,
-  pet_species TEXT,
+  user_pk TEXT NOT NULL,
+  pet_species TEXT NOT NULL,
   pet_color TEXT,
   FOREIGN KEY(user_pk) REFERENCES users(public_key)
 );
