@@ -70,7 +70,9 @@ func (m model) scheduleActivityChange(skipSleep bool) tea.Cmd {
 		ready := time.Now().After(t)
 		if ready {
 			nextDate := randDateInTheFuture()
-			log.Infof("%s user's pet is scheduled for a change at: %d", user.Name, nextDate)
+			dateFormatted := time.Unix(nextDate, 0).Format("2006-01-02 3:04PM")
+			nowFormatted := time.Now().Format("2006-01-02 3:04PM")
+			log.Infof("%s user's pet is scheduled for a change at: %s (current time: %s)", user.Name, dateFormatted, nowFormatted)
 			// TODO: implement partial update (i don't need to update the name here, but if i don't it sets it to an empty string)
 			// ok, there *has* to be a way to make partial updates with sqlc, but im too lazy
 			// to look it up
