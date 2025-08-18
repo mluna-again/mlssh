@@ -71,7 +71,13 @@ func (m model) scheduleActivityChange(skipSleep bool) tea.Cmd {
 		if ready {
 			nextDate := randDateInTheFuture()
 			log.Infof("%s user's pet is scheduled for a change at: %d", user.Name, nextDate)
-			_, err := m.queries.UpdateUser(ctx, repo.UpdateUserParams{NextActivityChangeAt: nextDate})
+			// TODO: implement partial update (i don't need to update the name here, but if i don't it sets it to an empty string)
+			// ok, there *has* to be a way to make partial updates with sqlc, but im too lazy
+			// to look it up
+			_, err := m.queries.UpdateUser(ctx, repo.UpdateUserParams{
+				NextActivityChangeAt: nextDate,
+				Name:                 user.Name,
+			})
 			if err != nil {
 				log.Error(err)
 				return activityTick{ready: false}
