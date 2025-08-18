@@ -58,7 +58,7 @@ type model struct {
 }
 
 func newModel(s ssh.Session) (model, []error) {
-	l, err := luna.NewLuna(luna.NewLunaParams{Animation: "sleeping", Pet: "cat", Size: luna.SMALL})
+	l, err := luna.NewLuna(luna.NewLunaParams{Animation: luna.SLEEPING, Pet: luna.CAT, Size: luna.SMALL})
 	if len(err) > 0 {
 		return model{}, err
 	}
