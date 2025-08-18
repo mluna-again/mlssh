@@ -10,9 +10,6 @@ import (
 	"github.com/mluna-again/mlssh/repo"
 )
 
-// make this a flag
-var DEBUG = false
-
 var activities []luna.LunaAnimation = []luna.LunaAnimation{
 	luna.IDLE,
 	luna.SLEEPING,

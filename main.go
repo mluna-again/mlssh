@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"embed"
 	"errors"
+	"flag"
 	"net"
 	"os"
 	"os/signal"
@@ -26,7 +27,16 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
+var DEBUG bool = false
+
 func main() {
+	flag.BoolVar(&DEBUG, "debug", false, "turn debug mode on (time passes fater, more logs, etc)")
+	flag.Parse()
+
+	if DEBUG {
+		log.Info("DEBUG mode on")
+	}
+
 	log.Info("Running migrations... ")
 	migrateDatabase()
 	log.Info("Migrations ran.")
@@ -89,6 +99,7 @@ func migrateDatabase() {
 	if err != nil {
 		panic(err)
 	}
+	goose.SetLogger(goose.NopLogger())
 	goose.SetBaseFS(migrations)
 	err = goose.SetDialect("sqlite")
 	if err != nil {
