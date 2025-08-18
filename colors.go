@@ -9,5 +9,6 @@ var (
 	yellow                = lipgloss.Color("#c4b28a")
 	fg                    = lipgloss.Color("#c5c9c5")
 	bg                    = lipgloss.Color("#181616")
+	gray                  = lipgloss.Color("#a6a69c")
 	none                  = lipgloss.NoColor{}
 )

@@ -154,6 +154,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.homescreen.SetHeight(msg.Height - lunaH)
 		m.homescreen.SetWidth(msg.Width)
 
+		m.signinscreen.SetHeight(msg.Height)
+		m.signinscreen.SetWidth(msg.Width)
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":

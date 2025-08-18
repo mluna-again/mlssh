@@ -6,14 +6,30 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+type signinField int
+
+const (
+	signinName signinField = iota
+	signinPet
+	signinVariant
+)
+
 type signinScreen struct {
-	nameInput  textinput.Model
-	nameInputS lipgloss.Style
-	renderer   *lipgloss.Renderer
+	nameInput         textinput.Model
+	nameInputS        lipgloss.Style
+	nameInputFocusedS lipgloss.Style
+	renderer          *lipgloss.Renderer
+	focusedInput      signinField
+	width             int
+	heigth            int
 }
 
 func newSigninScreen(r *lipgloss.Renderer) signinScreen {
 	nameInputS := r.NewStyle().
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(gray)
+
+	nameInputFocusedS := r.NewStyle().
 		Border(lipgloss.NormalBorder()).
 		BorderForeground(fg)
 
@@ -25,9 +41,10 @@ func newSigninScreen(r *lipgloss.Renderer) signinScreen {
 	nameInput.Width = 28
 
 	return signinScreen{
-		nameInput:  nameInput,
-		nameInputS: nameInputS,
-		renderer:   r,
+		nameInput:         nameInput,
+		nameInputS:        nameInputS,
+		nameInputFocusedS: nameInputFocusedS,
+		renderer:          r,
 	}
 }
 
@@ -38,16 +55,46 @@ func (s signinScreen) Init() tea.Cmd {
 func (s signinScreen) Update(msg tea.Msg) (signinScreen, tea.Cmd) {
 	var cmd tea.Cmd
 	cmds := []tea.Cmd{}
-	s.nameInput, cmd = s.nameInput.Update(msg)
-	cmds = append(cmds, cmd)
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "tab":
+			switch s.focusedInput {
+			case signinName:
+				s.focusedInput = signinPet
+			case signinPet:
+				s.focusedInput = signinVariant
+			case signinVariant:
+				s.focusedInput = signinName
+			}
+			return s, nil
+		}
+	}
+
+	if s.focusedInput == signinName {
+		s.nameInput, cmd = s.nameInput.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 
 	return s, tea.Batch(cmds...)
 }
 
 func (s signinScreen) View() string {
-	greetings := "hello friend, hello, friend.\n"
-	ni := s.nameInputS.Render(s.nameInput.View())
+	nis := s.nameInputFocusedS
+	if s.focusedInput != signinName {
+		nis = s.nameInputS
+	}
+	ni := nis.Render(s.nameInput.View())
 	ni = lipgloss.JoinVertical(lipgloss.Top, "What name do you want to give it?", ni)
 
-	return lipgloss.JoinVertical(lipgloss.Top, greetings, ni)
+	return lipgloss.Place(s.width, s.heigth, lipgloss.Center, lipgloss.Center, lipgloss.JoinVertical(lipgloss.Top, ni))
+}
+
+func (s *signinScreen) SetHeight(h int) {
+	s.heigth = h
+}
+
+func (s *signinScreen) SetWidth(w int) {
+	s.width = w
 }
