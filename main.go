@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"embed"
 	"errors"
 	"net"
 	"os"
@@ -16,11 +18,18 @@ import (
 	"github.com/charmbracelet/wish/activeterm"
 	"github.com/charmbracelet/wish/bubbletea"
 	"github.com/charmbracelet/wish/logging"
+	"github.com/pressly/goose/v3"
 
 	_ "modernc.org/sqlite"
 )
 
+//go:embed migrations/*.sql
+var migrations embed.FS
+
 func main() {
+	log.Info("Running migrations... ")
+	log.Info("Migrations ran.")
+
 	host := os.Getenv("MLSSH_HOST")
 	port := os.Getenv("MLSSH_PORT")
 	if host == "" {
@@ -72,4 +81,25 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		log.Fatal(err)
 	}
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
+}
+
+func migrateDatabase() {
+	db, err := sql.Open("sqlite", "data.db")
+	if err != nil {
+		panic(err)
+	}
+	goose.SetBaseFS(migrations)
+	err = goose.SetDialect("sqlite")
+	if err != nil {
+		panic(err)
+	}
+	err = goose.Up(db, "migrations")
+	if err != nil {
+		panic(err)
+	}
+
+	err = db.Close()
+	if err != nil {
+		panic(err)
+	}
 }
