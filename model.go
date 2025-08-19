@@ -191,7 +191,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			m.quitting = true
-			return m, m.quitSlowly
+			return m, m.quitSlowly(800)
 		}
 	}
 
@@ -225,7 +225,7 @@ func (m model) View() string {
 	}
 
 	if !m.ready {
-		return "loading..."
+		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, "loading...")
 	}
 
 	switch m.currentScreen {
