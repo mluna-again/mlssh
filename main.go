@@ -37,8 +37,6 @@ func main() {
 	flag.IntVar(&timeRangeMin, "wait-min", 15, "minimum time to wait before activity change (minutes)")
 	flag.IntVar(&timeRangeMax, "wait-max", 90, "minimum time to wait before activity change (minutes)")
 	flag.Parse()
-	log.Info(timeRangeMax)
-	log.Info(timeRangeMin)
 
 	if DEBUG {
 		log.Info("DEBUG mode on")
