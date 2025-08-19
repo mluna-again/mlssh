@@ -249,4 +249,5 @@ func (m *model) updateLuna() {
 	m.luna.SetName(m.settings.name)
 	m.luna.SetVariant(m.settings.color)
 	m.luna.ShowName()
+	m.luna.SetAutoresize(true)
 }
