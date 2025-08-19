@@ -43,17 +43,18 @@ type activityTick struct {
 	ready bool
 }
 
-func (m model) scheduleActivityChange(skipSleep bool) tea.Cmd {
+func (m model) scheduleActivityChange(skipMissingKeyCheck bool) tea.Cmd {
 	return func() tea.Msg {
-		if !skipSleep {
-			t := time.Minute
-			if DEBUG {
-				t = time.Second * 3
-			}
-			time.Sleep(t)
+		t := time.Minute
+		if DEBUG {
+			t = time.Second * 3
 		}
+		time.Sleep(t)
 		// user is not loaded yet (or doesnt have a pk somehow), i should probably handle this better but whatever
 		if m.user.publicKey == "" {
+			if !skipMissingKeyCheck {
+				log.Errorf("pk missing for user %s", m.user.name)
+			}
 			return activityTick{ready: false}
 		}
 
@@ -66,8 +67,8 @@ func (m model) scheduleActivityChange(skipSleep bool) tea.Cmd {
 			return activityTick{ready: false}
 		}
 
-		t := time.Unix(user.NextActivityChangeAt, 0)
-		ready := time.Now().After(t)
+		tn := time.Unix(user.NextActivityChangeAt, 0)
+		ready := time.Now().After(tn)
 		nextDate := randDateInTheFuture()
 		dateFormatted := time.Unix(nextDate, 0).Format("2006-01-02 3:04PM")
 		nowFormatted := time.Now().Format("2006-01-02 3:04PM")
