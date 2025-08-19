@@ -45,11 +45,6 @@ type activityTick struct {
 
 func (m model) scheduleActivityChange(skipMissingKeyCheck bool) tea.Cmd {
 	return func() tea.Msg {
-		t := time.Minute
-		if DEBUG {
-			t = time.Second * 3
-		}
-		time.Sleep(t)
 		// user is not loaded yet (or doesnt have a pk somehow), i should probably handle this better but whatever
 		if m.user.publicKey == "" {
 			if !skipMissingKeyCheck {
@@ -57,6 +52,12 @@ func (m model) scheduleActivityChange(skipMissingKeyCheck bool) tea.Cmd {
 			}
 			return activityTick{ready: false}
 		}
+
+		t := time.Minute
+		if DEBUG {
+			t = time.Second * 3
+		}
+		time.Sleep(t)
 
 		ctx, cancel := aLittleBit()
 		defer cancel()
@@ -70,9 +71,11 @@ func (m model) scheduleActivityChange(skipMissingKeyCheck bool) tea.Cmd {
 		tn := time.Unix(user.NextActivityChangeAt, 0)
 		ready := time.Now().After(tn)
 		nextDate := randDateInTheFuture()
-		dateFormatted := time.Unix(nextDate, 0).Format("2006-01-02 3:04PM")
+		nextDateFormatted := time.Unix(nextDate, 0).Format("2006-01-02 3:04PM")
+		currentDateFormatted := time.Unix(user.NextActivityChangeAt, 0).Format("2006-01-02 3:04PM")
 		nowFormatted := time.Now().Format("2006-01-02 3:04PM")
-		log.Infof("%s user's pet is scheduled for a change at: %s (current time: %s)", user.Name, dateFormatted, nowFormatted)
+		log.Infof("%s user's pet is scheduled for a change at: %s (current time: %s)", user.Name, currentDateFormatted, nowFormatted)
+
 		if ready {
 			// TODO: implement partial update (i don't need to update the name here, but if i don't it sets it to an empty string)
 			// ok, there *has* to be a way to make partial updates with sqlc, but im too lazy
@@ -86,6 +89,7 @@ func (m model) scheduleActivityChange(skipMissingKeyCheck bool) tea.Cmd {
 				log.Error(err)
 				return activityTick{ready: false}
 			}
+			log.Infof("%s user's pet is scheduled for a change at: %s (current time: %s)", user.Name, nextDateFormatted, nowFormatted)
 
 			return activityTick{ready: true, next: m.randActivity()}
 		}
