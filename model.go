@@ -116,7 +116,7 @@ func newModel(s ssh.Session) (model, []error) {
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(m.luna.Init(), m.connectToDB, m.scheduleActivityChange(true))
+	return tea.Batch(m.luna.Init(), m.connectToDB, m.scheduleActivityChange(false))
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

@@ -11,6 +11,7 @@ RETURNING *;
 -- name: UpdateUser :one
 UPDATE users
 SET name = COALESCE(?, name), next_activity_change_at = COALESCE(?, next_activity_change_at)
+WHERE public_key = ?
 RETURNING *;
 
 -- name: CreateSettings :one

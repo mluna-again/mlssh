@@ -118,16 +118,18 @@ func (q *Queries) GetUser(ctx context.Context, publicKey string) (GetUserRow, er
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET name = COALESCE(?, name), next_activity_change_at = COALESCE(?, next_activity_change_at)
+WHERE public_key = ?
 RETURNING public_key, name, next_activity_change_at
 `
 
 type UpdateUserParams struct {
 	Name                 string
 	NextActivityChangeAt int64
+	PublicKey            string
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, updateUser, arg.Name, arg.NextActivityChangeAt)
+	row := q.db.QueryRowContext(ctx, updateUser, arg.Name, arg.NextActivityChangeAt, arg.PublicKey)
 	var i User
 	err := row.Scan(&i.PublicKey, &i.Name, &i.NextActivityChangeAt)
 	return i, err
