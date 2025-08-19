@@ -125,6 +125,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case activityTick:
+		if msg.err != nil {
+			m.quitting = true
+			m.err = msg.err
+			log.Error(msg.err)
+			return m, quitSlowly
+		}
+
 		if msg.ready {
 			m.luna.SetAnimation(msg.next)
 		}

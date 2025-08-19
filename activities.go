@@ -42,6 +42,7 @@ type activityTick struct {
 	next    luna.LunaAnimation
 	ready   bool
 	waiting bool
+	err     error
 }
 
 func (m model) scheduleActivityChange() tea.Msg {
@@ -62,7 +63,7 @@ func (m model) scheduleActivityChange() tea.Msg {
 	user, err := m.queries.GetUser(ctx, m.user.publicKey)
 	if err != nil {
 		log.Error(err)
-		return activityTick{ready: false}
+		return activityTick{ready: false, err: err}
 	}
 
 	tn := time.Unix(user.NextActivityChangeAt, 0)
@@ -82,7 +83,7 @@ func (m model) scheduleActivityChange() tea.Msg {
 		})
 		if err != nil {
 			log.Error(err)
-			return activityTick{ready: false}
+			return activityTick{ready: false, err: err}
 		}
 		log.Infof("%s user's pet changed at: %s (next time: %s)", user.Name, nowFormatted, nextDateFormatted)
 
