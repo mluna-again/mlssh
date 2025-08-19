@@ -32,9 +32,16 @@ var bannerTXT string
 
 var DEBUG bool = false
 
+var timeRangeMin int = 15
+var timeRangeMax int = 90
+
 func main() {
 	flag.BoolVar(&DEBUG, "debug", false, "turn debug mode on (time passes fater, more logs, etc)")
+	flag.IntVar(&timeRangeMin, "wait-min", 15, "minimum time to wait before activity change (minutes)")
+	flag.IntVar(&timeRangeMax, "wait-max", 90, "minimum time to wait before activity change (minutes)")
 	flag.Parse()
+	log.Info(timeRangeMax)
+	log.Info(timeRangeMin)
 
 	if DEBUG {
 		log.Info("DEBUG mode on")
