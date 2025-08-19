@@ -14,6 +14,4 @@
     * feed
     * give water
 
-- cooler error/loading/you should not see this pages
-
 - -screen to change settings- what? and abandon your pet? >:(
