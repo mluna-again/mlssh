@@ -47,9 +47,6 @@ func (m model) scheduleActivityChange(skipMissingKeyCheck bool) tea.Cmd {
 	return func() tea.Msg {
 		// user is not loaded yet (or doesnt have a pk somehow), i should probably handle this better but whatever
 		if m.user.publicKey == "" {
-			if !skipMissingKeyCheck {
-				log.Errorf("pk missing for user %s", m.user.name)
-			}
 			return activityTick{ready: false}
 		}
 
@@ -89,7 +86,7 @@ func (m model) scheduleActivityChange(skipMissingKeyCheck bool) tea.Cmd {
 				log.Error(err)
 				return activityTick{ready: false}
 			}
-			log.Infof("%s user's pet is scheduled for a change at: %s (current time: %s)", user.Name, nextDateFormatted, nowFormatted)
+			log.Infof("%s user's pet changed at: %s (next time: %s)", user.Name, nowFormatted, nextDateFormatted)
 
 			return activityTick{ready: true, next: m.randActivity()}
 		}
