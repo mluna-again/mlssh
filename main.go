@@ -27,6 +27,9 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
+//go:embed banner.txt
+var bannerTXT string
+
 var DEBUG bool = false
 
 func main() {
@@ -54,7 +57,7 @@ func main() {
 		wish.WithPublicKeyAuth(func(_ ssh.Context, key ssh.PublicKey) bool {
 			return true
 		}),
-		wish.WithBanner("come, sit with me, my fellow traveler. let’s sit together and watch the stars die.\n"),
+		wish.WithBanner(bannerTXT),
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
 		wish.WithMiddleware(
