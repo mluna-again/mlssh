@@ -116,7 +116,7 @@ func newModel(s ssh.Session) (model, []error) {
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(m.luna.Init(), m.connectToDB, m.scheduleActivityChange(false))
+	return tea.Batch(m.luna.Init(), m.connectToDB, m.scheduleActivityChange)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -128,7 +128,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.ready {
 			m.luna.SetAnimation(msg.next)
 		}
-		return m, m.scheduleActivityChange(false)
+		m.ready = !msg.waiting
+		return m, m.scheduleActivityChange
 
 	case quitSlowlyMsg:
 		// TODO: how do i gracefully close the db?
@@ -148,7 +149,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.queries = msg.queries
 		m.user = msg.user
 
-		m.ready = true
 		m.homescreen.SetUser(msg.user)
 
 		if m.user.isNew {
