@@ -16,7 +16,7 @@ var activities []luna.LunaAnimation = []luna.LunaAnimation{
 }
 
 func randDateInTheFuture() int64 {
-	offset := (rand.IntN(90) + 15) * 60
+	offset := (rand.IntN(timeRangeMax) + timeRangeMin) * 60
 
 	if DEBUG {
 		return time.Now().Unix() + 10
