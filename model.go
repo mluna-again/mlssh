@@ -222,6 +222,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, lipgloss.JoinVertical(lipgloss.Center, dejaVu, "you took a wrong turn"))
 	if m.quitting && m.err != nil {
 		return "sorry, something went wrong! see you!"
 	}
@@ -245,7 +246,7 @@ func (m model) View() string {
 		return screen
 	}
 
-	return "you should not be able to see this"
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, lipgloss.JoinVertical(lipgloss.Center, dejaVu, "you took a wrong turn"))
 }
 
 func (m *model) updateLuna() {

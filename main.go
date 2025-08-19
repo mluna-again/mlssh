@@ -27,9 +27,6 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-//go:embed banner.txt
-var bannerTXT string
-
 var DEBUG bool = false
 
 var timeRangeMin int = 15
