@@ -129,10 +129,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case activityTick:
 		if msg.err != nil {
-			m.quitting = true
-			m.err = msg.err
-			log.Error(msg.err)
-			return m, tea.Batch(nextErrViewTick, quitSlowly)
+			return m.quitWithError(msg.err)
 		}
 
 		if msg.ready {
@@ -146,10 +143,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case connectToDBMsg:
 		if msg.err != nil {
-			m.quitting = true
-			m.err = msg.err
-			log.Error(m.err)
-			return m, tea.Batch(nextErrViewTick, quitSlowly)
+			return m.quitWithError(msg.err)
 		}
 		m.db = msg.db
 		m.queries = msg.queries
@@ -170,10 +164,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if msg.err != nil {
-			m.quitting = true
-			m.err = msg.err
-			log.Error(msg.err)
-			return m, tea.Batch(nextErrViewTick, quitSlowly)
+			return m.quitWithError(msg.err)
 		}
 
 		m.settings = settings{
@@ -200,7 +191,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			m.quitting = true
-			return m, quitSlowly
+			return m, m.quitSlowly
 		}
 	}
 
