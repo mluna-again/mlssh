@@ -71,6 +71,8 @@ func newModel(s ssh.Session) (model, []error) {
 		return model{}, err
 	}
 	l.DisableKeys()
+	l.SetAutoresize(true)
+	l.ShowName()
 
 	pty, _, _ := s.Pty()
 
@@ -248,6 +250,4 @@ func (m *model) updateLuna() {
 	m.luna.SetPet(m.settings.species)
 	m.luna.SetName(m.settings.name)
 	m.luna.SetVariant(m.settings.color)
-	m.luna.ShowName()
-	m.luna.SetAutoresize(true)
 }
