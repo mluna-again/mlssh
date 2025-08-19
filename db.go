@@ -31,11 +31,7 @@ func (m model) connectToDB() tea.Msg {
 		return connectToDBMsg{err: errors.New("sorry, you need to use public key to access the server")}
 	}
 
-	db, err := sql.Open("sqlite", "data.db")
-	if err != nil {
-		log.Error(err)
-		return connectToDBMsg{err: err}
-	}
+	db := m.db
 
 	queries := repo.New(db)
 

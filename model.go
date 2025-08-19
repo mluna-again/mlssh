@@ -61,7 +61,7 @@ type model struct {
 	signinscreen signinScreen
 }
 
-func newModel(s ssh.Session) (model, []error) {
+func newModel(s ssh.Session, db *sql.DB) (model, []error) {
 	l, err := luna.NewLuna(luna.NewLunaParams{
 		Animation: luna.SLEEPING,
 		Pet:       luna.CAT,
@@ -110,6 +110,7 @@ func newModel(s ssh.Session) (model, []error) {
 		homescreen:   newHomescreen(u, renderer),
 		signinscreen: newSigninScreen(renderer),
 		renderer:     renderer,
+		db:           db,
 	}
 
 	return m, nil
@@ -139,10 +140,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.scheduleActivityChange
 
 	case quitSlowlyMsg:
-		// TODO: how do i gracefully close the db?
-		if m.db != nil {
-			_ = m.db.Close()
-		}
 		return m, tea.Quit
 
 	case connectToDBMsg:
@@ -200,7 +197,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
-			return m, tea.Quit
+			m.quitting = true
+			return m, quitSlowly
 		}
 	}
 
@@ -227,7 +225,7 @@ func (m model) View() string {
 	}
 
 	if m.quitting {
-		return "bye!"
+		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, "byebye!")
 	}
 
 	if !m.ready {

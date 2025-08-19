@@ -45,7 +45,10 @@ func main() {
 	}
 
 	log.Info("Running migrations... ")
-	migrateDatabase()
+	db, err := migrateDatabase()
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Info("Migrations ran.")
 
 	host := os.Getenv("MLSSH_HOST")
@@ -65,7 +68,9 @@ func main() {
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
 		wish.WithMiddleware(
-			bubbletea.Middleware(teaHandler),
+			bubbletea.Middleware(func(sess ssh.Session) (tea.Model, []tea.ProgramOption) {
+				return teaHandler(sess, db)
+			}),
 			activeterm.Middleware(), // Bubble Tea apps usually require a PTY.
 			logging.Middleware(),
 		),
@@ -85,6 +90,14 @@ func main() {
 	}()
 
 	<-done
+	log.Info("Closing DB connection")
+	err = db.Close()
+	if err != nil {
+		log.Error(err)
+	} else {
+		log.Info("DB closed")
+	}
+
 	log.Info("Stopping SSH server")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer func() { cancel() }()
@@ -93,32 +106,29 @@ func main() {
 	}
 }
 
-func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
-	m, err := newModel(s)
+func teaHandler(s ssh.Session, db *sql.DB) (tea.Model, []tea.ProgramOption) {
+	m, err := newModel(s, db)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
 }
 
-func migrateDatabase() {
+func migrateDatabase() (*sql.DB, error) {
 	db, err := sql.Open("sqlite", "data.db")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	goose.SetLogger(goose.NopLogger())
 	goose.SetBaseFS(migrations)
 	err = goose.SetDialect("sqlite")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	err = goose.Up(db, "migrations")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	err = db.Close()
-	if err != nil {
-		panic(err)
-	}
+	return db, nil
 }
