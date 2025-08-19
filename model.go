@@ -51,6 +51,7 @@ type model struct {
 	quitting bool
 	err      error
 	ready    bool
+	errView  errorViewModel
 
 	// screen managment
 	currentScreen availableScreen
@@ -111,6 +112,7 @@ func newModel(s ssh.Session, db *sql.DB) (model, []error) {
 		signinscreen: newSigninScreen(renderer),
 		renderer:     renderer,
 		db:           db,
+		errView:      newErrorViewModel(),
 	}
 
 	return m, nil
@@ -130,7 +132,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			m.err = msg.err
 			log.Error(msg.err)
-			return m, quitSlowly
+			return m, tea.Batch(nextErrViewTick, quitSlowly)
 		}
 
 		if msg.ready {
@@ -147,7 +149,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			m.err = msg.err
 			log.Error(m.err)
-			return m, quitSlowly
+			return m, tea.Batch(nextErrViewTick, quitSlowly)
 		}
 		m.db = msg.db
 		m.queries = msg.queries
@@ -171,7 +173,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			m.err = msg.err
 			log.Error(msg.err)
-			return m, quitSlowly
+			return m, tea.Batch(nextErrViewTick, quitSlowly)
 		}
 
 		m.settings = settings{
@@ -216,12 +218,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.luna, lunaCmd = m.luna.Update(msg)
 	cmds = append(cmds, lunaCmd)
 
+	m.errView, cmd = m.errView.Update(msg)
+	cmds = append(cmds, cmd)
+
 	return m, tea.Batch(cmds...)
 }
 
 func (m model) View() string {
 	if m.quitting && m.err != nil {
-		return "sorry, something went wrong! see you!"
+		return m.errView.View()
 	}
 
 	if m.quitting {
