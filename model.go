@@ -114,7 +114,7 @@ func newModel(s ssh.Session, db *sql.DB) (model, []error) {
 		user:              u,
 		// TODO: remove user, i should fetch it from the connectToDBMsg event to avoid having stale data
 		//       check signinscreen to see how to do it
-		homescreen:   newHomescreen(u, renderer),
+		homescreen:   newHomescreen(renderer),
 		signinscreen: newSigninScreen(renderer),
 		renderer:     renderer,
 		db:           db,
