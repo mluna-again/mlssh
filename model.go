@@ -67,6 +67,12 @@ func newModel(s ssh.Session, db *sql.DB) (model, []error) {
 		Animation: luna.SLEEPING,
 		Pet:       luna.CAT,
 		Size:      luna.SMALL,
+		ResizePoints: luna.LunaResizePoints{
+			HeightLarge:  40,
+			WidthLarge:   40,
+			HeightMedium: 30,
+			WidthMedium:  30,
+		},
 	})
 	if len(err) > 0 {
 		return model{}, err
