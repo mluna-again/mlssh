@@ -97,7 +97,7 @@ func (h homescreen) View() string {
 	thoughts := h.think()
 	content := h.renderer.PlaceHorizontal(h.width-2, lipgloss.Left, lipgloss.JoinVertical(lipgloss.Top, stats, "", thoughts))
 
-	return lipgloss.PlaceVertical(h.height, lipgloss.Top, h.tableS.Render(content))
+	return h.tableS.Render(content)
 }
 
 func (h *homescreen) SetWidth(w int) {
@@ -138,18 +138,27 @@ func (h homescreen) think() string {
 }
 
 func (h homescreen) progressBar(progress int) string {
-	w := (h.width - 19) / 2 // magic numbers: borders - leght of labels
-	progressPerBlock := 100 / w
-	blocks := progress / progressPerBlock
-	padd := w - blocks
+	// i dont know what this magic numbers do anymore man im sorry
+	w := (h.width - 19) / 2
+	if h.width%2 != 0 {
+		w--
+	}
 
-	blocksStr := strings.Repeat(" ", blocks)
+	progressPerBlock := 100 / float64(w)
+	blocks := float64(progress) / progressPerBlock
+	blocksInt := int(blocks)
+	padd := w - blocksInt
+	if padd < 0 {
+		padd = 0
+	}
+
+	blocksStr := strings.Repeat(" ", blocksInt)
 	paddStr := strings.Repeat(" ", padd)
 
 	fullStyle := h.progressS
 	emptyStyle := h.progressEmptyS
 
-	if blocks <= w/3 {
+	if progress < 30 {
 		fullStyle = h.progressRedS
 		emptyStyle = h.progressRedEmptyS
 	}

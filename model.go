@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -238,7 +239,13 @@ func (m model) View() string {
 	case home:
 		screen := m.homescreen.View()
 		petCentered := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, m.luna.View())
-		return lipgloss.JoinVertical(lipgloss.Top, screen, petCentered)
+		padd := m.height - lipgloss.Height(screen) - lipgloss.Height(petCentered) - 1
+		if padd < 0 {
+			padd = 0
+		}
+		space := strings.Repeat("\n", padd)
+
+		return lipgloss.JoinVertical(lipgloss.Center, screen, space, petCentered)
 
 	case signin:
 		screen := m.signinscreen.View()
