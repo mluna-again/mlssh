@@ -258,7 +258,9 @@ func (s signinScreen) View() string {
 	}
 	goBtn := goS.Render(lipgloss.PlaceHorizontal(niinputW, lipgloss.Center, goMsg))
 
-	return lipgloss.Place(s.width, s.heigth, lipgloss.Center, lipgloss.Center, lipgloss.JoinVertical(lipgloss.Top, ni, pets, variants, goBtn))
+	instructions := "Tip: Use Tab and Arrow Keys to navigate"
+
+	return lipgloss.Place(s.width, s.heigth, lipgloss.Center, lipgloss.Center, lipgloss.JoinVertical(lipgloss.Center, ni, pets, variants, goBtn, instructions))
 }
 
 func (s *signinScreen) SetHeight(h int) {
